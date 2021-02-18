@@ -1,6 +1,7 @@
 import { Component, ElementRef, HostListener, Input, OnInit, ViewChild } from '@angular/core'
 import { Subject } from 'rxjs'
 import { fadeIn, fadeInOut } from '../animations'
+import { DataService } from '../data.service'
 
 const randomMessages = [
   'Nice to meet you',
@@ -34,6 +35,7 @@ export class ChatWidgetComponent implements OnInit {
   @Input() public theme: 'blue' | 'grey' | 'red' = 'blue'
 
   public _visible = false
+  private _sessionId = '';
 
   public get visible() {
     return this._visible
@@ -104,8 +106,25 @@ export class ChatWidgetComponent implements OnInit {
     if (message.trim() === '') {
       return
     }
+    const obj = {
+      text: message,
+      sessionId: this._sessionId
+    }
     this.addMessage(this.client, message, 'sent')
-    setTimeout(() => this.randomMessage(), 1000)
+    this.dataService.getbotResponse(obj).subscribe(res => {
+      if(res) {
+        const botResponse = res.output.generic[0].text;      
+        this._sessionId = res.context.global.session_id;
+        console.log(this._sessionId);
+         
+        this.addMessage(this.operator, botResponse, 'received')
+      }
+      
+    }, err => {
+      console.log({err})
+    })
+    
+    // setTimeout(() => this.randomMessage(), 1000)
   }
 
   @HostListener('document:keypress', ['$event'])
@@ -117,5 +136,7 @@ export class ChatWidgetComponent implements OnInit {
       this.toggleChat()
     }
   }
+
+  constructor(private dataService: DataService){}
 
 }
